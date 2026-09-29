@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบฝาก-ถอน ออโต้ - VIP LOTTO</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS (อ้างอิงจากไฟล์ที่เราเพิ่งสร้าง) -->
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+
+    <div id="app" class="pb-12">
+        <!-- Header -->
+        <header class="bg-slate-800/80 backdrop-blur border-b border-slate-700 sticky top-0 z-50">
+            <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center font-bold text-slate-900 shadow-lg shadow-amber-500/20">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-white leading-tight">กระเป๋าเงิน</h1>
+                        <p class="text-xs text-amber-400 font-medium">ระบบฝาก-ถอน อัตโนมัติ</p>
+                    </div>
+                </div>
+                <a href="index.html" class="px-3 py-1.5 text-xs font-medium bg-slate-700 hover:bg-slate-600 rounded-lg transition text-slate-200">
+                    <i class="fa-solid fa-house mr-1"></i> กลับหน้าหลัก
+                </a>
+            </div>
+        </header>
+
+        <main class="max-w-4xl mx-auto px-4 mt-6">
+            
+            <!-- Balance Card -->
+            <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-6 shadow-lg shadow-amber-500/20 mb-6 flex flex-col md:flex-row items-center justify-between">
+                <div>
+                    <p class="text-amber-950 font-medium mb-1">ยอดเงินคงเหลือที่ถอนได้</p>
+                    <h2 class="text-4xl font-bold text-slate-950">฿{{ userBalance.toLocaleString('th-TH', {minimumFractionDigits: 2}) }}</h2>
+                </div>
+                <div class="mt-4 md:mt-0 flex space-x-3">
+                    <button @click="currentTab = 'deposit'" :class="currentTab === 'deposit' ? 'bg-slate-900 text-white' : 'bg-white/20 text-slate-900 hover:bg-white/30'" class="px-6 py-2.5 rounded-xl font-bold transition shadow-sm">
+                        <i class="fa-solid fa-qrcode mr-2"></i> ฝากเงิน
+                    </button>
+                    <button @click="currentTab = 'withdraw'" :class="currentTab === 'withdraw' ? 'bg-slate-900 text-white' : 'bg-white/20 text-slate-900 hover:bg-white/30'" class="px-6 py-2.5 rounded-xl font-bold transition shadow-sm">
+                        <i class="fa-solid fa-money-bill-transfer mr-2"></i> ถอนเงิน
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 1: ฝากเงิน (Deposit) -->
+            <div v-if="currentTab === 'deposit'" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl animate-fade-in">
+                <h3 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-3">สร้าง QR Code รับฝากเงิน</h3>
+                
+                <div v-if="!qrGenerated" class="max-w-md mx-auto space-y-4 py-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">ระบุจำนวนเงินที่ต้องการฝาก (บาท)</label>
+                        <input v-model="depositAmount" type="number" min="100" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-lg text-white font-bold focus:outline-none focus:border-amber-500 transition text-center" placeholder="ขั้นต่ำ 100 บาท">
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button @click="depositAmount = 100" class="py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">+100</button>
+                        <button @click="depositAmount = 500" class="py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">+500</button>
+                        <button @click="depositAmount = 1000" class="py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition">+1,000</button>
+                    </div>
+                    <button @click="generateQR" :disabled="depositAmount < 100" class="w-full py-3 mt-4 bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-600 disabled:text-slate-400 text-slate-950 font-bold rounded-xl transition shadow-lg shadow-emerald-500/30">
+                        สร้างสแกน QR Code
+                    </button>
+                </div>
+
+                <!-- QR Code Display (Mock) -->
+                <div v-else class="text-center py-6 animate-fade-in">
+                    <div class="inline-block bg-white p-4 rounded-2xl shadow-lg mb-4">
+                        <!-- Placeholder รูป QR Code -->
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" alt="QR Code" class="w-48 h-48 mx-auto">
+                    </div>
+                    <h4 class="text-xl font-bold text-emerald-400 mb-1">ยอดโอน: ฿{{ depositAmount.toLocaleString('th-TH', {minimumFractionDigits: 2}) }}</h4>
+                    <p class="text-sm text-slate-400 mb-6">สแกนผ่านแอปธนาคาร ยอดจะเข้าอัตโนมัติภายใน 10 วินาที</p>
+                    
+                    <button @click="cancelDeposit" class="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-sm font-medium transition">
+                        ยกเลิก / ทำรายการใหม่
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 2: ถอนเงิน (Withdraw) -->
+            <div v-if="currentTab === 'withdraw'" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl animate-fade-in">
+                <h3 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-3">ถอนเงินเข้าบัญชีธนาคาร</h3>
+                
+                <div class="max-w-md mx-auto space-y-5 py-4">
+                    <!-- Bank Info (Mock User Data) -->
+                    <div class="bg-slate-900 border border-slate-700 rounded-xl p-4 flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center font-bold text-white text-xs">
+                            SCB
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-400">ธนาคารไทยพาณิชย์</p>
+                            <p class="font-bold text-white">408-XXXX-999</p>
+                            <p class="text-xs text-emerald-400">นาย ทดสอบ ระบบ</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">ระบุจำนวนเงินที่ต้องการถอน (บาท)</label>
+                        <input v-model="withdrawAmount" type="number" min="300" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-lg text-rose-400 font-bold focus:outline-none focus:border-rose-500 transition text-center" placeholder="ขั้นต่ำ 300 บาท">
+                        <p class="text-xs text-slate-500 mt-2 text-center">ยอดเงินที่สามารถถอนได้: ฿{{ userBalance.toLocaleString() }}</p>
+                    </div>
+
+                    <button @click="submitWithdraw" :disabled="withdrawAmount < 300 || withdrawAmount > userBalance" class="w-full py-3 bg-rose-600 hover:bg-rose-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold rounded-xl transition shadow-lg shadow-rose-600/30">
+                        ยืนยันการถอนเงิน
+                    </button>
+                </div>
+            </div>
+
+            <!-- Transaction History -->
+            <div class="mt-8">
+                <h3 class="text-base font-bold text-slate-300 mb-4"><i class="fa-solid fa-clock-rotate-left mr-2"></i> ประวัติการทำรายการล่าสุด</h3>
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-lg">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="bg-slate-900/50 text-xs uppercase text-slate-400">
+                            <tr>
+                                <th class="px-5 py-3">วัน/เวลา</th>
+                                <th class="px-5 py-3">ประเภท</th>
+                                <th class="px-5 py-3">จำนวนเงิน</th>
+                                <th class="px-5 py-3">สถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-700">
+                            <tr v-for="tx in transactions" :key="tx.id" class="hover:bg-slate-700/50 transition">
+                                <td class="px-5 py-3">{{ tx.date }}</td>
+                                <td class="px-5 py-3">
+                                    <span :class="tx.type === 'deposit' ? 'text-emerald-400' : 'text-rose-400'">
+                                        <i :class="tx.type === 'deposit' ? 'fa-solid fa-arrow-down' : 'fa-solid fa-arrow-up'" class="mr-1"></i>
+                                        {{ tx.type === 'deposit' ? 'ฝากเงิน' : 'ถอนเงิน' }}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-3 font-bold text-white">฿{{ tx.amount.toLocaleString() }}</td>
+                                <td class="px-5 py-3">
+                                    <span v-if="tx.status === 'success'" class="px-2 py-1 bg-emerald-500/10 text-emerald-400 text-xs rounded-full border border-emerald-500/20">สำเร็จ</span>
+                                    <span v-if="tx.status === 'pending'" class="px-2 py-1 bg-amber-500/10 text-amber-400 text-xs rounded-full border border-amber-500/20">รอตรวจสอบ</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/js/translations.js"></script>
+    <script src="assets/js/app.js"></script>
+    <script>
+        const { createApp, ref } = Vue;
+
+        createApp({
+            setup() {
+                const currentTab = ref('deposit');
+                const userBalance = ref(15450.50);
+                
+                // Deposit State
+                const depositAmount = ref(null);
+                const qrGenerated = ref(false);
+
+                // Withdraw State
+                const withdrawAmount = ref(null);
+
+                // Mock Transactions
+                const transactions = ref([
+                    { id: 1, date: '26 ก.ย. 26 19:45', type: 'deposit', amount: 1000, status: 'success' },
+                    { id: 2, date: '25 ก.ย. 26 10:30', type: 'withdraw', amount: 5000, status: 'success' },
+                    { id: 3, date: '22 ก.ย. 26 08:15', type: 'deposit', amount: 500, status: 'success' }
+                ]);
+
+                const generateQR = () => {
+                    if (depositAmount.value >= 100) {
+                        qrGenerated.value = true;
+                    }
+                };
+
+                const cancelDeposit = () => {
+                    qrGenerated.value = false;
+                    depositAmount.value = null;
+                };
+
+                const submitWithdraw = () => {
+                    if (withdrawAmount.value >= 300 && withdrawAmount.value <= userBalance.value) {
+                        alert(`ส่งคำขอถอนเงินยอด ฿${withdrawAmount.value.toLocaleString()} เรียบร้อยแล้ว`);
+                        userBalance.value -= withdrawAmount.value;
+                        transactions.value.unshift({
+                            id: Date.now(),
+                            date: '26 ก.ย. 26 (เมื่อกี้)',
+                            type: 'withdraw',
+                            amount: withdrawAmount.value,
+                            status: 'pending'
+                        });
+                        withdrawAmount.value = null;
+                    }
+                };
+
+                return {
+                    currentTab,
+                    userBalance,
+                    depositAmount,
+                    qrGenerated,
+                    withdrawAmount,
+                    transactions,
+                    generateQR,
+                    cancelDeposit,
+                    submitWithdraw
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

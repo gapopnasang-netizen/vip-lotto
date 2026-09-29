@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายงานและสถิติการเงิน - VIP LOTTO</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+    <div id="app" class="flex flex-col min-h-screen pb-16">
+        
+        <!-- Header -->
+        <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center font-bold text-white shadow-lg">
+                    <i class="fa-solid fa-chart-pie"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold text-white leading-tight">รายงานและสถิติการเงิน</h1>
+                    <p class="text-xs text-emerald-400">VIP LOTTO Analytics & Reports</p>
+                </div>
+            </div>
+            <a href="index.html" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs transition border border-slate-700">
+                <i class="fa-solid fa-house mr-1"></i> กลับหน้าหลัก
+            </a>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="max-w-6xl mx-auto px-4 mt-6 w-full space-y-6">
+
+            <!-- Filter Period Bar -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center space-x-3 w-full sm:w-auto">
+                    <span class="text-xs text-slate-400">เลือกงวดการออกรางวัล:</span>
+                    <select v-model="selectedPeriod" class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-amber-400 font-bold focus:outline-none focus:border-emerald-500">
+                        <option value="16-oct-2026">งวดวันที่ 16 ตุลาคม 2026</option>
+                        <option value="01-oct-2026">งวดวันที่ 1 ตุลาคม 2026</option>
+                        <option value="16-sep-2026">งวดวันที่ 16 กันยายน 2026</option>
+                    </select>
+                </div>
+                <button @click="fetchReportData" class="w-full sm:w-auto px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-rotate mr-1"></i> โหลดข้อมูลรายงาน
+                </button>
+            </div>
+
+            <!-- Summary Stat Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                    <p class="text-xs text-slate-400 mb-1">ยอดแทงรวมทั้งสิ้น (Turnover)</p>
+                    <h3 class="text-2xl font-bold text-white">฿{{ stats.totalTurnover.toLocaleString('th-TH', {minimumFractionDigits: 2}) }}</h3>
+                    <p class="text-[10px] text-emerald-400 mt-2"><i class="fa-solid fa-arrow-trend-up mr-1"></i> +12.5% จากงวดก่อน</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                    <p class="text-xs text-slate-400 mb-1">ยอดจ่ายเงินรางวัล (Payouts)</p>
+                    <h3 class="text-2xl font-bold text-rose-400">฿{{ stats.totalPayouts.toLocaleString('th-TH', {minimumFractionDigits: 2}) }}</h3>
+                    <p class="text-[10px] text-slate-400 mt-2">หักจากโพยที่ถูกรางวัลทั้งหมด</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                    <p class="text-xs text-slate-400 mb-1">กำไรสุทธิระบบ (Net Profit)</p>
+                    <h3 class="text-2xl font-bold text-amber-400">฿{{ stats.netProfit.toLocaleString('th-TH', {minimumFractionDigits: 2}) }}</h3>
+                    <p class="text-[10px] text-amber-400 mt-2"><i class="fa-solid fa-wallet mr-1"></i> รายได้เข้าเอเย่นต์/เจ้ามือ</p>
+                </div>
+            </div>
+
+            <!-- Breakdown by Bet Type Table -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <h3 class="text-sm font-bold text-white flex items-center">
+                    <i class="fa-solid fa-table-list text-emerald-400 mr-2"></i> สรุปยอดขายแยกตามประเภทหวย
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-800 uppercase text-slate-400 tracking-wider">
+                            <tr>
+                                <th class="px-4 py-3">ประเภทการแทง</th>
+                                <th class="px-4 py-3">จำนวนโพย</th>
+                                <th class="px-4 py-3">ยอดเดิมพันรวม</th>
+                                <th class="px-4 py-3">สัดส่วน (%)</th>
+                                <th class="px-4 py-3 text-right">สถานะความเสี่ยง</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            <tr v-for="item in breakdown" :key="item.type" class="hover:bg-slate-800/40 transition">
+                                <td class="px-4 py-3 font-bold text-white">{{ item.name }}</td>
+                                <td class="px-4 py-3">{{ item.count }} รายการ</td>
+                                <td class="px-4 py-3 font-semibold text-emerald-400">฿{{ item.amount.toLocaleString() }}</td>
+                                <td class="px-4 py-3">
+                                    <div class="w-full bg-slate-950 rounded-full h-2 max-w-[120px] overflow-hidden border border-slate-800">
+                                        <div class="bg-emerald-500 h-full rounded-full" :style="{ width: item.percent + '%' }"></div>
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 mt-0.5 inline-block">{{ item.percent }}%</span>
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <span v-if="item.risk === 'normal'" class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 text-[10px]">ปกติ</span>
+                                    <span v-else class="px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-full border border-amber-500/20 text-[10px]">เสี่ยงสูง</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+
+    </div>
+
+    <!-- Vue Script -->
+    <script>
+        const { createApp, ref } = Vue;
+
+        createApp({
+            setup() {
+                const selectedPeriod = ref('16-oct-2026');
+                const stats = ref({
+                    totalTurnover: 142500.00,
+                    totalPayouts: 85200.00,
+                    netProfit: 57300.00
+                });
+
+                const breakdown = ref([
+                    { name: '3 ตัวบน', count: 142, amount: 65000, percent: 45.6, risk: 'normal' },
+                    { name: '3 ตัวโต๊ด', count: 98, amount: 22500, percent: 15.8, risk: 'normal' },
+                    { name: '2 ตัวบน', count: 210, amount: 35000, percent: 24.6, risk: 'high' },
+                    { name: '2 ตัวล่าง', count: 120, amount: 15000, percent: 10.5, risk: 'normal' },
+                    { name: 'วิ่งบน / ล่าง', count: 45, amount: 5000, percent: 3.5, risk: 'normal' }
+                ]);
+
+                const fetchReportData = () => {
+                    alert(`โหลดข้อมูลรายงานของงวด ${selectedPeriod.value} เรียบร้อยแล้ว!`);
+                };
+
+                return {
+                    selectedPeriod,
+                    stats,
+                    breakdown,
+                    fetchReportData
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

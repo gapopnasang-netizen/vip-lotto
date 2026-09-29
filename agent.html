@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VIP LOTTO - System Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Noto+Sans+Lao:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Kanit', 'Noto Sans Lao', sans-serif; }
+    .bg-main-dark { background-color: #0b1021; }
+    .bg-card-dark { background-color: #121936; }
+    .bg-card-inner { background-color: #1a2347; }
+    .border-glow { border-color: #2e3a67; }
+    .gradient-btn { background: linear-gradient(135deg, #a855f7 0%, #d946ef 100%); }
+    .gradient-btn-active { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); }
+  </style>
+</head>
+<body class="bg-main-dark text-slate-100 min-h-screen flex flex-col relative">
+
+  <div id="app" class="flex-1 flex flex-col">
+
+    <!-- ==================== 1. หน้า LOGIN (ถ้ายังไม่เข้าสู่ระบบ) ==================== -->
+    <div v-if="!isLoggedIn" class="flex-1 flex flex-col items-center justify-center p-4 relative">
+      
+      <!-- แถบสลับภาษา (Language Switcher: TH / EN / LA) -->
+      <div class="absolute top-4 right-4 flex items-center gap-2 bg-card-dark border border-glow rounded-full px-3 py-1 text-xs">
+        <span class="text-slate-400">🌐 {{ t('language') }}:</span>
+        <button @click="currentLang = 'th'" :class="currentLang === 'th' ? 'text-amber-400 font-bold' : 'text-slate-400'">TH</button>
+        <span class="text-slate-600">|</span>
+        <button @click="currentLang = 'en'" :class="currentLang === 'en' ? 'text-amber-400 font-bold' : 'text-slate-400'">EN</button>
+        <span class="text-slate-600">|</span>
+        <button @click="currentLang = 'la'" :class="currentLang === 'la' ? 'text-amber-400 font-bold' : 'text-slate-400'">LA</button>
+      </div>
+
+      <div class="bg-card-dark border border-glow p-6 md:p-8 rounded-2xl w-full max-w-md shadow-2xl space-y-5 my-auto">
+        
+        <!-- แถบประกาศข่าวสารระบบ -->
+        <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5 flex items-center gap-2 text-xs text-amber-300">
+          <span class="animate-bounce">📢</span>
+          <p class="truncate">{{ t('announcement') }}</p>
+        </div>
+
+        <div class="text-center space-y-1">
+          <h1 class="text-3xl font-black text-white tracking-wider">VIP LOTTO</h1>
+          <p class="text-xs text-slate-400">{{ t('loginSubtitle') }}</p>
+        </div>
+
+        <form @submit.prevent="handleLogin" class="space-y-4">
+          <div>
+            <label class="text-xs text-slate-300 mb-1 block font-medium">{{ t('usernameLabel') }}</label>
+            <input type="text" v-model="loginForm.username" :placeholder="t('usernamePlaceholder')" required class="w-full bg-card-inner border border-glow rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+          </div>
+
+          <div>
+            <label class="text-xs text-slate-300 mb-1 block font-medium">{{ t('passwordLabel') }}</label>
+            <div class="relative">
+              <input :type="showPassword ? 'text' : 'password'" v-model="loginForm.password" :placeholder="t('passwordPlaceholder')" required class="w-full bg-card-inner border border-glow rounded-xl pl-4 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+              <button type="button" @click="showPassword = !showPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs">
+                {{ showPassword ? '🙈' : '👁️' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" v-model="loginForm.rememberMe" class="rounded bg-card-inner border-glow text-indigo-600 focus:ring-0">
+              <span>{{ t('rememberMe') }}</span>
+            </label>
+            <button type="button" @click="forgotPasswordAlert" class="text-indigo-400 hover:underline">
+              {{ t('forgotPassword') }}
+            </button>
+          </div>
+
+          <div v-if="loginError" class="text-rose-400 text-xs text-center font-semibold bg-rose-500/10 py-2 rounded-lg border border-rose-500/20">
+            {{ loginError }}
+          </div>
+
+          <button type="submit" class="w-full py-3 rounded-xl gradient-btn font-bold text-white text-sm shadow-lg hover:opacity-90 transition">
+            {{ t('loginButton') }}
+          </button>
+        </form>
+
+        <div class="bg-card-inner p-3 rounded-xl border border-glow text-[11px] space-y-1 text-slate-400">
+          <p class="font-bold text-amber-400">💡 {{ t('demoAccounts') }}:</p>
+          <div class="flex justify-between">
+            <span>{{ t('memberRole') }}: <strong class="text-white">user1</strong> / <strong class="text-white">123</strong></span>
+            <button @click="fillLogin('user1', '123')" class="text-indigo-400 underline">{{ t('fillQuick') }}</button>
+          </div>
+          <div class="flex justify-between">
+            <span>{{ t('agentRole') }}: <strong class="text-white">agent1</strong> / <strong class="text-white">123</strong></span>
+            <button @click="fillLogin('agent1', '123')" class="text-amber-400 underline">{{ t('fillQuick') }}</button>
+          </div>
+        </div>
+
+      </div>
+
+      <a href="javascript:void(0)" @click="contactAdmin" class="fixed bottom-4 right-4 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-full shadow-2xl border border-emerald-400/40 text-xs font-bold flex items-center gap-2 transition transform hover:scale-105">
+        <span class="text-base">💬</span>
+        <span>{{ t('contactSupport') }}</span>
+      </a>
+
+    </div>
+
+
+    <!-- ==================== 2. ระบบหลัก (แสดงเมื่อ Login แล้ว) ==================== -->
+    <template v-else>
+      
+      <!-- Top Bar Header -->
+      <header class="bg-card-dark border-b border-glow px-4 py-3 flex justify-between items-center shadow-lg sticky top-0 z-20">
+        <div class="flex items-center gap-3">
+          <button @click="isMenuOpen = !isMenuOpen" class="md:hidden text-2xl text-slate-300 focus:outline-none p-1">
+            ☰
+          </button>
+          <h1 class="text-xl md:text-2xl font-black text-white tracking-wider flex items-center gap-2 cursor-pointer" @click="activeMenu = (currentRole === 'agent' ? 'agent-dashboard' : 'lotto')">
+            VIP LOTTO 
+            <span :class="currentRole === 'agent' ? 'bg-amber-600' : 'bg-indigo-600'" class="text-[10px] md:text-xs text-white px-2 py-0.5 rounded font-normal uppercase">
+              {{ currentRole === 'agent' ? t('agentPortalBadge') : t('memberPortalBadge') }}
+            </span>
+          </h1>
+        </div>
+
+        <!-- ข้อมูลผู้ใช้งาน & ปุ่มสลับภาษา (TH / EN / LA) & ปุ่มออกจากระบบ -->
+        <div class="flex items-center gap-3 text-xs md:text-sm">
+          <!-- ปุ่มเปลี่ยนภาษาใน Header -->
+          <div class="flex items-center gap-1 bg-card-inner border border-glow rounded-lg px-2 py-1 text-xs">
+            <button @click="currentLang = 'th'" :class="currentLang === 'th' ? 'text-amber-400 font-bold' : 'text-slate-400'">TH</button>
+            <span class="text-slate-600">|</span>
+            <button @click="currentLang = 'en'" :class="currentLang === 'en' ? 'text-amber-400 font-bold' : 'text-slate-400'">EN</button>
+            <span class="text-slate-600">|</span>
+            <button @click="currentLang = 'la'" :class="currentLang === 'la' ? 'text-amber-400 font-bold' : 'text-slate-400'">LA</button>
+          </div>
+
+          <div class="text-right hidden sm:block">
+            <p class="font-bold text-white">{{ currentUser.name }}</p>
+            <p class="text-[10px] text-slate-400 capitalize">{{ t('roleLabel') }}: {{ currentUser.role }}</p>
+          </div>
+          <button @click="handleLogout" class="bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/40 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+            {{ t('logoutButton') }}
+          </button>
+        </div>
+      </header>
+
+      <div class="flex-1 flex relative">
+        
+        <!-- Backdrop มือถือ -->
+        <div v-if="isMenuOpen" @click="isMenuOpen = false" class="fixed inset-0 bg-black/60 z-30 md:hidden"></div>
+
+        <!-- Left Sidebar -->
+        <aside :class="isMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'" 
+               class="fixed md:static top-0 left-0 h-full w-64 bg-card-dark border-r border-glow p-4 flex flex-col gap-6 z-40 transition-transform duration-300 ease-in-out overflow-y-auto">
+          
+          <div class="flex justify-between items-center md:hidden pb-2 border-b border-glow">
+            <span class="font-bold text-white">{{ t('menuTitle') }}</span>
+            <button @click="isMenuOpen = false" class="text-slate-400 text-xl">&times;</button>
+          </div>
+
+          <!-- เมนูฝั่ง Member -->
+          <div v-if="currentRole === 'member'">
+            <p class="text-xs text-slate-500 font-semibold mb-2">{{ t('memberMenuHeader') }}</p>
+            <nav class="space-y-1">
+              <button @click="selectMenu('lotto')" :class="activeMenu === 'lotto' ? 'gradient-btn-active text-white shadow-lg' : 'text-slate-300 hover:bg-card-inner'" class="w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-2">
+                <span>🎯</span> {{ t('menuBetLotto') }}
+              </button>
+              <button @click="selectMenu('quick')" :class="activeMenu === 'quick' ? 'gradient-btn-active text-white shadow-lg' : 'text-slate-300 hover:bg-card-inner'" class="w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-2">
+                <span>⚡</span> {{ t('menuQuickKey') }}
+              </button>
+              <button @click="selectMenu('history')" :class="activeMenu === 'history' ? 'gradient-btn-active text-white shadow-lg' : 'text-slate-300 hover:bg-card-inner'" class="w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-2">
+                <span>📜</span> {{ t('menuHistory') }}
+              </button>
+            </nav>
+          </div>
+
+          <!-- เมนูฝั่ง Agent (รองรับ 3 ภาษา TH/EN/LA) -->
+          <div v-if="currentRole === 'agent'">
+            <p class="text-xs text-amber-500 font-semibold mb-2">{{ t('agentMenuHeader') }}</p>
+            <nav class="space-y-1">
+              <button @click="selectMenu('agent-dashboard')" :class="activeMenu === 'agent-dashboard' ? 'bg-amber-600 text-white shadow-lg' : 'text-slate-300 hover:bg-card-inner'" class="w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-2">
+                <span>🛡️</span> {{ t('menuAgentDashboard') }}
+              </button>
+              <button @click="selectMenu('agent-settings')" :class="activeMenu === 'agent-settings' ? 'bg-amber-600 text-white shadow-lg' : 'text-slate-300 hover:bg-card-inner'" class="w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-2">
+                <span>⚙️</span> {{ t('menuAgentSettings') }}
+              </button>
+              <button @click="selectMenu('agent-members')" :class="activeMenu === 'agent-members' ? 'bg-amber-600 text-white shadow-lg' : 'text-slate-300 hover:bg-card-inner'" class="w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-2">
+                <span>👥</span> {{ t('menuAgentMembers') }}
+              </button>
+              <button @click="selectMenu('agent-commission')" :class="activeMenu === 'agent-commission' ? 'bg-amber-600 text-white shadow-lg' : 'text-slate-300 hover:bg-card-inner'" class="w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-2">
+                <span>📈</span> {{ t('menuAgentCommission') }}
+              </button>
+            </nav>
+          </div>
+
+          <div>
+            <p class="text-xs text-slate-500 font-semibold mb-2">{{ t('financeHeader') }}</p>
+            <nav class="space-y-1">
+              <button @click="openWithdrawModal" class="w-full text-left px-4 py-2 rounded-lg text-sm text-slate-300 hover:bg-card-inner transition flex items-center gap-2">
+                <span>💸</span> {{ t('withdrawButton') }}
+              </button>
+              <button @click="claimFreeCredit" v-if="currentRole === 'member'" class="w-full text-left px-4 py-2 rounded-lg text-sm text-slate-300 hover:bg-card-inner transition flex items-center justify-between">
+                <span class="flex items-center gap-2"><span>🎁</span> {{ t('claimCreditButton') }}</span>
+                <span v-if="freeCreditClaimed" class="text-xs text-emerald-400">{{ t('claimedStatus') }}</span>
+              </button>
+            </nav>
+          </div>
+
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 p-3 md:p-6 space-y-4 md:space-y-5 overflow-y-auto w-full">
+
+          <!-- ==================== 🔵 ฝั่ง MEMBER ==================== -->
+          <template v-if="currentRole === 'member'">
+            <div class="grid grid-cols-2 gap-3 md:gap-4 max-w-xl">
+              <div class="bg-card-dark p-3 md:p-4 rounded-xl border border-glow flex items-center gap-3">
+                <div class="bg-emerald-500/10 text-emerald-400 p-2.5 rounded-xl text-xl">💳</div>
+                <div>
+                  <p class="text-[10px] md:text-xs text-slate-400">เงินสดคงเหลือ</p>
+                  <p class="text-base md:text-xl font-bold text-white mt-0.5">฿{{ cashBalance.toLocaleString() }}</p>
+                </div>
+              </div>
+
+              <div class="bg-card-dark p-3 md:p-4 rounded-xl border border-glow flex items-center gap-3">
+                <div class="bg-indigo-500/10 text-indigo-400 p-2.5 rounded-xl text-xl">💎</div>
+                <div>
+                  <p class="text-[10px] md:text-xs text-slate-400">เครดิตฟรี</p>
+                  <p class="text-base md:text-xl font-bold text-indigo-400 mt-0.5">฿{{ creditBalance.toLocaleString() }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="activeMenu === 'lotto'" class="space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="bg-card-dark p-4 rounded-xl border border-glow">
+                  <div class="flex justify-between items-center mb-2">
+                    <span class="font-semibold text-slate-200 text-sm">เลขอานอยพิเศษ</span>
+                    <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded">ล่าสุด</span>
+                  </div>
+                  <div class="text-center py-2 bg-card-inner rounded-lg mb-2">
+                    <span class="text-3xl font-black text-amber-400 tracking-wider">8954</span>
+                  </div>
+                  <div class="flex justify-around text-xs text-slate-300">
+                    <span>3 ตัว: <strong class="text-white">954</strong></span>
+                    <span>2 ตัว: <strong class="text-white">54</strong></span>
+                  </div>
+                </div>
+
+                <div class="bg-card-dark p-4 rounded-xl border border-glow">
+                  <div class="flex justify-between items-center mb-2">
+                    <span class="font-semibold text-slate-200 text-sm">หวยรัฐบาลไทย</span>
+                    <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded">ล่าสุด</span>
+                  </div>
+                  <div class="text-center py-2 bg-card-inner rounded-lg mb-2">
+                    <span class="text-3xl font-black text-amber-400 tracking-wider">603097</span>
+                  </div>
+                  <div class="flex justify-around text-xs text-slate-300">
+                    <span>3 ตัวท้าย: <strong class="text-white">097</strong></span>
+                    <span>2 ตัวล่าง: <strong class="text-white">61</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-card-dark p-4 md:p-5 rounded-xl border border-glow space-y-4">
+                <h3 class="font-bold text-slate-200 text-sm flex justify-between">
+                  <span>🎲 โหมดแทง: <strong class="text-amber-400">{{ selectedLottoType }}</strong></span>
+                </h3>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <button v-for="type in lottoTypes" :key="type" 
+                          @click="selectedLottoType = type"
+                          :class="selectedLottoType === type ? 'bg-indigo-600 border-indigo-400 text-white font-bold' : 'bg-card-inner border-glow text-slate-300'"
+                          class="py-2 px-1 rounded-lg border text-center truncate transition">
+                    {{ type }}
+                  </button>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 md:gap-3">
+                  <div>
+                    <label class="text-[10px] md:text-xs text-slate-400 mb-1 block">ระบุเลข</label>
+                    <input type="text" v-model="quickForm.num" placeholder="เช่น 954" class="w-full bg-card-inner border border-glow rounded-lg px-3 py-2 text-xs md:text-sm text-white">
+                  </div>
+                  <div>
+                    <label class="text-[10px] md:text-xs text-slate-400 mb-1 block">บน (บาท)</label>
+                    <input type="number" v-model="quickForm.top" placeholder="10" class="w-full bg-card-inner border border-glow rounded-lg px-3 py-2 text-xs md:text-sm text-white">
+                  </div>
+                  <div>
+                    <label class="text-[10px] md:text-xs text-slate-400 mb-1 block">ล่าง (บาท)</label>
+                    <input type="number" v-model="quickForm.bottom" placeholder="10" class="w-full bg-card-inner border border-glow rounded-lg px-3 py-2 text-xs md:text-sm text-white">
+                  </div>
+                </div>
+
+                <button @click="addQuickBet" class="w-full py-2.5 rounded-xl gradient-btn font-bold text-white text-xs md:text-sm">
+                  + เพิ่มรายการลงโพยแทง
+                </button>
+              </div>
+            </div>
+
+            <div v-if="activeMenu === 'quick'" class="bg-card-dark p-6 rounded-xl border border-glow space-y-4">
+              <h3 class="font-bold text-lg text-white">⚡ แป้นคีย์เลขด่วน 0-9</h3>
+              <div class="grid grid-cols-5 gap-2 max-w-md mx-auto my-4">
+                <button v-for="n in [1,2,3,4,5,6,7,8,9,0]" :key="n" @click="quickForm.num += n" class="p-4 bg-card-inner border border-glow hover:bg-indigo-600 text-xl font-bold rounded-xl">
+                  {{ n }}
+                </button>
+              </div>
+              <div class="flex gap-2 max-w-md mx-auto">
+                <button @click="quickForm.num = ''" class="flex-1 bg-rose-600 py-2 rounded-lg text-xs font-bold">ล้างตัวเลข</button>
+                <button @click="selectMenu('lotto')" class="flex-1 bg-emerald-600 py-2 rounded-lg text-xs font-bold">ไปหน้าแทงหวย</button>
+              </div>
+            </div>
+
+            <div v-if="activeMenu === 'history'" class="bg-card-dark p-5 rounded-xl border border-glow space-y-4">
+              <h3 class="font-bold text-lg text-white">📜 ประวัติการแทงล่าสุด</h3>
+              <div v-if="betHistory.length === 0" class="text-center py-6 text-slate-500 text-sm">ยังไม่มีรายการแทง</div>
+              <div v-else class="space-y-2">
+                <div v-for="(item, idx) in betHistory" :key="idx" class="flex justify-between items-center text-xs bg-card-inner p-3 rounded-lg border border-glow">
+                  <div>
+                    <span class="text-indigo-300 font-bold">{{ item.type }}</span> - เลข <strong class="text-amber-400">{{ item.num }}</strong>
+                  </div>
+                  <span class="font-bold text-white">฿{{ item.amount }}</span>
+                </div>
+              </div>
+            </div>
+          </template>
+
+
+          <!-- ==================== 🟡 ฝั่ง AGENT (รองรับ 3 ภาษา TH/EN/LA) ==================== -->
+          <template v-if="currentRole === 'agent'">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+              <div class="bg-card-dark p-4 rounded-xl border border-amber-500/30 flex items-center gap-3">
+                <div class="bg-amber-500/10 text-amber-400 p-3 rounded-xl text-2xl">📊</div>
+                <div>
+                  <p class="text-xs text-slate-400">{{ t('agentCardTotalBet') }}</p>
+                  <p class="text-xl font-bold text-white mt-0.5">฿{{ agentStats.teamTotalBet.toLocaleString() }}</p>
+                </div>
+              </div>
+
+              <div class="bg-card-dark p-4 rounded-xl border border-amber-500/30 flex items-center gap-3">
+                <div class="bg-amber-500/10 text-amber-400 p-3 rounded-xl text-2xl">🛡️</div>
+                <div>
+                  <p class="text-xs text-slate-400">{{ t('agentCardRiskHold') }}</p>
+                  <p class="text-xl font-bold text-indigo-400 mt-0.5">฿100,000 / ฿45,000</p>
+                </div>
+              </div>
+
+              <div class="bg-card-dark p-4 rounded-xl border border-amber-500/30 flex items-center gap-3">
+                <div class="bg-amber-500/10 text-amber-400 p-3 rounded-xl text-2xl">💰</div>
+                <div>
+                  <p class="text-xs text-slate-400">{{ t('agentCardCommAcc') }}</p>
+                  <p class="text-xl font-bold text-amber-400 mt-0.5">฿{{ agentStats.totalCommission.toLocaleString() }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Agent Dashboard -->
+            <div v-if="activeMenu === 'agent-dashboard'" class="space-y-4">
+              <div class="bg-card-dark p-4 rounded-xl border border-glow space-y-3">
+                <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                  <span>⏱️ {{ t('lottoStatusTitle') }}</span>
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                  <div v-for="lotto in lottoStatuses" :key="lotto.nameTh" class="bg-card-inner p-3 rounded-lg border border-glow flex justify-between items-center">
+                    <div>
+                      <p class="font-bold text-white">{{ getLottoName(lotto) }}</p>
+                      <p class="text-[10px] text-slate-400">{{ t('closeTimeText') }}: {{ lotto.closeTime }}</p>
+                    </div>
+                    <button @click="toggleLottoStatus(lotto)" 
+                            :class="lotto.isOpen ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-rose-500/20 text-rose-400 border-rose-500/40'" 
+                            class="px-2.5 py-1 rounded border text-[10px] font-bold transition">
+                      {{ lotto.isOpen ? t('statusOpen') : t('statusClosed') }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Risk Warning Alert -->
+              <div class="bg-card-dark p-4 md:p-5 rounded-xl border border-rose-500/40 space-y-3">
+                <div class="flex justify-between items-center">
+                  <h3 class="font-bold text-rose-400 text-sm flex items-center gap-2">
+                    <span>⚠️ {{ t('riskAlertTitle') }}</span>
+                  </h3>
+                  <span class="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded font-mono">Auto Risk Detection</span>
+                </div>
+
+                <div class="space-y-2">
+                  <div v-for="risk in riskNumbers" :key="risk.num" class="bg-card-inner p-3 rounded-lg border border-glow flex flex-col md:flex-row justify-between md:items-center gap-2 text-xs">
+                    <div>
+                      <span class="text-slate-300">{{ t('hotNumber') }}: <strong class="text-amber-400 text-sm">{{ risk.num }}</strong> ({{ risk.type }})</span>
+                      <p class="text-[10px] text-slate-400 mt-0.5">{{ t('teamBetTotal') }}: ฿{{ risk.currentAmount.toLocaleString() }} / {{ t('ceilingLimit') }}: ฿{{ risk.maxLimit.toLocaleString() }}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <div class="w-28 bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div class="bg-rose-500 h-full" :style="{ width: risk.percent + '%' }"></div>
+                      </div>
+                      <button @click="cutRisk(risk)" class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-3 py-1.5 rounded text-[10px] transition">
+                        {{ t('cutRiskBtn') }} (฿{{ (risk.currentAmount - risk.maxLimit).toLocaleString() }})
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-2 bg-card-dark p-4 rounded-xl border border-glow space-y-3">
+                  <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-white text-sm">📥 {{ t('liveStreamTitle') }}</h3>
+                    <span class="text-[10px] text-emerald-400 animate-pulse">● Live Stream</span>
+                  </div>
+                  <div class="space-y-2 text-xs">
+                    <div v-for="stream in liveStreams" :key="stream.id" class="bg-card-inner p-2.5 rounded-lg flex justify-between items-center border border-glow">
+                      <div>
+                        <span class="text-amber-400 font-bold">{{ stream.user }}</span>
+                        <span class="text-slate-300 ml-2">{{ t('betOn') }} {{ stream.lotto }}: [<strong class="text-white">{{ stream.num }}</strong>] {{ stream.detail }}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-slate-400 text-[10px]">{{ stream.time }}</span>
+                        <button @click="printSlip(stream)" class="bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded text-[10px] hover:bg-indigo-600">🖨️ {{ t('printSlipBtn') }}</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="bg-card-dark p-4 rounded-xl border border-amber-500/30 flex flex-col justify-between space-y-3">
+                  <div>
+                    <h3 class="font-bold text-amber-400 text-sm">📝 {{ t('proxyBetTitle') }}</h3>
+                    <p class="text-xs text-slate-400 mt-1">{{ t('proxyBetDesc') }}</p>
+                  </div>
+                  <button @click="proxyBetModal" class="w-full bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-xl text-xs font-bold transition shadow-lg">
+                    + {{ t('openProxyBetBtn') }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="bg-card-dark p-4 rounded-xl border border-amber-500/30 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div>
+                  <h3 class="font-bold text-white text-sm">🏁 {{ t('settlementTitle') }}</h3>
+                  <p class="text-xs text-slate-400">{{ t('settlementDesc') }}</p>
+                </div>
+                <button @click="settleReward" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition shadow-lg">
+                  🏆 {{ t('settleBtn') }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Agent Settings -->
+            <div v-if="activeMenu === 'agent-settings'" class="space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-card-dark p-4 rounded-xl border border-glow space-y-3">
+                  <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                    <span>⚙️ {{ t('payoutSettingsTitle') }}</span>
+                  </h3>
+                  <div class="space-y-2 text-xs">
+                    <div class="flex justify-between items-center bg-card-inner p-2.5 rounded-lg border border-glow">
+                      <span class="text-slate-300">{{ t('pay3Top') }}</span>
+                      <input type="number" v-model="payouts.top3" class="w-24 bg-slate-900 border border-glow rounded px-2 py-1 text-right text-amber-400 font-bold">
+                    </div>
+                    <div class="flex justify-between items-center bg-card-inner p-2.5 rounded-lg border border-glow">
+                      <span class="text-slate-300">{{ t('pay3Tod') }}</span>
+                      <input type="number" v-model="payouts.tod3" class="w-24 bg-slate-900 border border-glow rounded px-2 py-1 text-right text-amber-400 font-bold">
+                    </div>
+                    <div class="flex justify-between items-center bg-card-inner p-2.5 rounded-lg border border-glow">
+                      <span class="text-slate-300">{{ t('pay2Digit') }}</span>
+                      <input type="number" v-model="payouts.twoDigit" class="w-24 bg-slate-900 border border-glow rounded px-2 py-1 text-right text-amber-400 font-bold">
+                    </div>
+                  </div>
+                  <button @click="alert(t('savePayoutAlert'))" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-xs font-bold transition">{{ t('savePayoutBtn') }}</button>
+                </div>
+
+                <div class="bg-card-dark p-4 rounded-xl border border-rose-500/30 space-y-3">
+                  <h3 class="font-bold text-rose-400 text-sm flex items-center gap-2">
+                    <span>🚫 {{ t('blockedNumbersTitle') }}</span>
+                  </h3>
+                  <div class="flex gap-2">
+                    <input type="text" v-model="newBlockedNum" :placeholder="t('blockedPlaceholder')" class="flex-1 bg-card-inner border border-glow rounded-lg px-3 py-1.5 text-xs text-white">
+                    <button @click="addBlockedNumber" class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">+ {{ t('addBlockedBtn') }}</button>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5 pt-2">
+                    <span v-for="num in blockedNumbers" :key="num" class="bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs px-2.5 py-1 rounded-full flex items-center gap-1">
+                      {{ num }} <button @click="removeBlockedNumber(num)" class="hover:text-white">&times;</button>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Agent Members -->
+            <div v-if="activeMenu === 'agent-members'" class="bg-card-dark p-4 md:p-6 rounded-xl border border-amber-500/30 space-y-4">
+              <div class="flex justify-between items-center">
+                <div>
+                  <h3 class="font-bold text-base md:text-lg text-amber-400">👥 {{ t('memberListTitle') }}</h3>
+                  <p class="text-xs text-slate-400">{{ t('memberListDesc') }}</p>
+                </div>
+                <button @click="addNewMember" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                  + {{ t('addMemberBtn') }}
+                </button>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs md:text-sm border-collapse min-w-[500px]">
+                  <thead>
+                    <tr class="border-b border-glow text-slate-400 text-[10px] md:text-xs">
+                      <th class="pb-2">Username</th>
+                      <th class="pb-2">{{ t('thCreditBalance') }}</th>
+                      <th class="pb-2">{{ t('thTotalBet') }}</th>
+                      <th class="pb-2">{{ t('thDiscount') }} (%)</th>
+                      <th class="pb-2 text-right">{{ t('thActions') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-800">
+                    <tr v-for="member in agentMembers" :key="member.username">
+                      <td class="py-3 font-semibold text-white">{{ member.username }}</td>
+                      <td class="py-3 text-emerald-400 font-bold">฿{{ member.balance.toLocaleString() }}</td>
+                      <td class="py-3 text-indigo-300">฿{{ member.totalBet.toLocaleString() }}</td>
+                      <td class="py-3 text-amber-400 font-bold">{{ member.discount }}%</td>
+                      <td class="py-3 text-right">
+                        <button @click="adjustCredit(member)" class="bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 px-2 py-1 rounded text-[10px] hover:bg-indigo-600">{{ t('adjustCreditBtn') }}</button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Agent Commission -->
+            <div v-if="activeMenu === 'agent-commission'" class="bg-card-dark p-4 md:p-6 rounded-xl border border-amber-500/30 space-y-4">
+              <h3 class="font-bold text-base md:text-lg text-amber-400">📈 {{ t('commReportTitle') }}</h3>
+              
+              <div class="bg-card-inner p-5 rounded-xl border border-glow flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                  <p class="text-xs text-slate-400">{{ t('commAvailableDesc') }}</p>
+                  <p class="text-3xl font-bold text-amber-400 mt-1">฿{{ agentStats.totalCommission.toLocaleString() }}</p>
+                </div>
+                <button @click="withdrawCommission" class="w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition shadow-lg">
+                  {{ t('withdrawCommBtn') }}
+                </button>
+              </div>
+            </div>
+          </template>
+
+        </main>
+      </div>
+
+    </template>
+
+  </div>
+
+  <script>
+    // คลังข้อความ 3 ภาษา (TH / EN / LA)
+    const translations = {
+      th: {
+        language: 'ภาษา',
+        announcement: 'ระบบเปิดรับแทงหวยฮานอยพิเศษแล้ววันนี้!',
+        loginSubtitle: 'กรุณาเข้าสู่ระบบเพื่อใช้งาน',
+        usernameLabel: 'ชื่อผู้ใช้งาน (Username)',
+        usernamePlaceholder: 'ระบุชื่อผู้ใช้งาน',
+        passwordLabel: 'รหัสผ่าน (Password)',
+        passwordPlaceholder: 'ระบุรหัสผ่าน',
+        rememberMe: 'จำฉันไว้ในระบบ',
+        forgotPassword: 'ลืมรหัสผ่าน?',
+        loginButton: 'เข้าสู่ระบบ (Login)',
+        demoAccounts: 'บัญชีสำหรับทดสอบ (Demo Accounts)',
+        memberRole: 'สมาชิก',
+        agentRole: 'เอเย่นต์',
+        fillQuick: 'กรอกด่วน',
+        contactSupport: 'ติดต่อแอดมิน Line',
+        memberPortalBadge: 'Member Portal',
+        agentPortalBadge: 'Agent Console',
+        roleLabel: 'สิทธิ์ใช้งาน',
+        logoutButton: 'ออกจากระบบ',
+        menuTitle: 'เมนูระบบ',
+        memberMenuHeader: 'เมนูสมาชิก',
+        agentMenuHeader: 'เมนูบริหารเอเย่นต์',
+        menuBetLotto: 'แทงหวยออนไลน์',
+        menuQuickKey: 'คีย์เลขด่วน 0-9',
+        menuHistory: 'ประวัติการแทง',
+        menuAgentDashboard: 'แผงคุมความเสี่ยง & แดชบอร์ด',
+        menuAgentSettings: 'ตั้งค่าอัตราจ่าย & บล็อกเลข',
+        menuAgentMembers: 'จัดการสมาชิกในสาย',
+        menuAgentCommission: 'รายงานคอมมิชชัน',
+        financeHeader: 'การเงิน',
+        withdrawButton: 'ถอนเงิน',
+        claimCreditButton: 'รับเครดิตฟรี',
+        claimedStatus: 'รับแล้ว',
+        
+        // Agent Translations
+        agentCardTotalBet: 'ยอดแทงรวมทั้งสายงาน',
+        agentCardRiskHold: 'ยอดถือสู้เอง / ตัดส่งสายบน',
+        agentCardCommAcc: 'ค่าคอมฯ สะสมพร้อมถอน',
+        lottoStatusTitle: 'สถานะเปิด/ปิดรับแทงประจำวัน',
+        closeTimeText: 'ปิดรับ',
+        statusOpen: '🟢 เปิดรับแทง',
+        statusClosed: '🔴 ปิดรับแทง',
+        riskAlertTitle: 'แจ้งเตือนเลขอั้น & ยอดถือสู้เสี่ยงสูง',
+        hotNumber: 'เลขเด็ด',
+        teamBetTotal: 'ยอดแทงจากสายงาน',
+        ceilingLimit: 'เพดานสู้ไหว',
+        cutRiskBtn: 'ตัดส่งสายบน',
+        liveStreamTitle: 'รายการส่งโพยล่าสุดในสายงาน',
+        betOn: 'แทง',
+        printSlipBtn: 'สลิป',
+        proxyBetTitle: 'คีย์โพยแทนลูกทีม',
+        proxyBetDesc: 'กรณีรับโพยผ่านไลน์หรือกระดาษ สามารถช่วยคีย์ลงระบบให้สมาชิกได้ทันที',
+        openProxyBetBtn: 'เปิดหน้าคีย์โพยแทนสมาชิก',
+        settlementTitle: 'เคลียร์ยอดผลรางวัลประจำงวด (Settlement)',
+        settlementDesc: 'กรอกรางวัลเพื่อคำนวณ กำไร/ขาดทุน และตัดจ่ายเครดิตของสายงานอัตโนมัติ',
+        settleBtn: 'กรอกผลรางวัล & สรุปเคลียร์ยอด',
+        payoutSettingsTitle: 'ตั้งค่าอัตราจ่าย (Payout Settings)',
+        pay3Top: '3 ตัวบน (บาทละ)',
+        pay3Tod: '3 ตัวโต๊ด (บาทละ)',
+        pay2Digit: '2 ตัว บน/ล่าง (บาทละ)',
+        savePayoutBtn: 'บันทึกอัตราจ่าย',
+        savePayoutAlert: 'บันทึกอัตราจ่ายเรียบร้อย!',
+        blockedNumbersTitle: 'เลขปิดรับเด็ดขาด (Blocked Numbers)',
+        blockedPlaceholder: 'ระบุเลขปิดรับ เช่น 99',
+        addBlockedBtn: 'เพิ่มเลขปิดรับ',
+        memberListTitle: 'รายชื่อสมาชิกภายใต้สายเอเย่นต์',
+        memberListDesc: 'จัดการข้อมูล ปรับเครดิต และส่วนลดรายบุคคล',
+        addMemberBtn: 'เพิ่มสมาชิกใหม่',
+        thCreditBalance: 'เครดิตคงเหลือ',
+        thTotalBet: 'ยอดแทงรวม',
+        thDiscount: 'ส่วนลด',
+        thActions: 'การจัดการ',
+        adjustCreditBtn: 'เติม/ตัด เครดิต',
+        commReportTitle: 'รายงานสรุปค่าคอมมิชชัน',
+        commAvailableDesc: 'ยอดเงินค่าคอมมิชชันที่พร้อมถอนเข้ากระเป๋าหลัก',
+        withdrawCommBtn: 'ถอนคอมมิชชันเข้าเงินสด'
+      },
+      en: {
+        language: 'Language',
+        announcement: 'Hanoi Special Lotto is now open for betting!',
+        loginSubtitle: 'Please login to continue',
+        usernameLabel: 'Username',
+        usernamePlaceholder: 'Enter username',
+        passwordLabel: 'Password',
+        passwordPlaceholder: 'Enter password',
+        rememberMe: 'Remember me',
+        forgotPassword: 'Forgot Password?',
+        loginButton: 'Login',
+        demoAccounts: 'Demo Accounts',
+        memberRole: 'Member',
+        agentRole: 'Agent',
+        fillQuick: 'Autofill',
+        contactSupport: 'Contact Support',
+        memberPortalBadge: 'Member Portal',
+        agentPortalBadge: 'Agent Console',
+        roleLabel: 'Role',
+        logoutButton: 'Logout',
+        menuTitle: 'System Menu',
+        memberMenuHeader: 'Member Menu',
+        agentMenuHeader: 'Agent Management',
+        menuBetLotto: 'Lotto Betting',
+        menuQuickKey: 'Quick Keypad 0-9',
+        menuHistory: 'Bet History',
+        menuAgentDashboard: 'Risk Control & Dashboard',
+        menuAgentSettings: 'Payouts & Blocked Numbers',
+        menuAgentMembers: 'Team Members',
+        menuAgentCommission: 'Commission Report',
+        financeHeader: 'Finance',
+        withdrawButton: 'Withdraw',
+        claimCreditButton: 'Claim Bonus',
+        claimedStatus: 'Claimed',
+
+        // Agent Translations
+        agentCardTotalBet: 'Total Team Bets',
+        agentCardRiskHold: 'Held Risk / Passed to Upper',
+        agentCardCommAcc: 'Accumulated Commission',
+        lottoStatusTitle: 'Daily Market Status',
+        closeTimeText: 'Closes at',
+        statusOpen: '🟢 Open',
+        statusClosed: '🔴 Closed',
+        riskAlertTitle: 'Risk Ceiling & Hot Numbers Alert',
+        hotNumber: 'Hot Number',
+        teamBetTotal: 'Team Bets',
+        ceilingLimit: 'Risk Limit',
+        cutRiskBtn: 'Pass to Upper',
+        liveStreamTitle: 'Recent Bets Stream',
+        betOn: 'Bet',
+        printSlipBtn: 'Slip',
+        proxyBetTitle: 'Proxy Bet for Team',
+        proxyBetDesc: 'Key in bets received from Line or paper slips on behalf of members.',
+        openProxyBetBtn: 'Open Proxy Bet Form',
+        settlementTitle: 'Draw Settlement & Payout',
+        settlementDesc: 'Enter winning numbers to auto-calculate P&L and settle member balances.',
+        settleBtn: 'Settle Draw Results',
+        payoutSettingsTitle: 'Payout Rate Settings',
+        pay3Top: '3 Direct (per 1 THB)',
+        pay3Tod: '3 Permutation (per 1 THB)',
+        pay2Digit: '2 Digits (per 1 THB)',
+        savePayoutBtn: 'Save Payout Rates',
+        savePayoutAlert: 'Payout rates updated successfully!',
+        blockedNumbersTitle: 'Strictly Blocked Numbers',
+        blockedPlaceholder: 'Enter number e.g. 99',
+        addBlockedBtn: 'Add Blocked',
+        memberListTitle: 'Downline Member List',
+        memberListDesc: 'Manage profile, adjust credit balances and discounts.',
+        addMemberBtn: 'Add New Member',
+        thCreditBalance: 'Credit Balance',
+        thTotalBet: 'Total Bet',
+        thDiscount: 'Discount',
+        thActions: 'Actions',
+        adjustCreditBtn: 'Adjust Credit',
+        commReportTitle: 'Commission Summary Report',
+        commAvailableDesc: 'Commission balance available for withdrawal',
+        withdrawCommBtn: 'Withdraw Commission'
+      },
+      la: {
+        language: 'ພາສາ',
+        announcement: 'ລະບົບເປີດຮັບແທງຫວຍຮາໂນ້ຍພິເສດແລ້ວມື້ນີ້!',
+        loginSubtitle: 'ກະລຸນາເຂົ້າสู่ລະບົບເພື່ອใช้งาน',
+        usernameLabel: 'ຊື່ຜູ້ໃຊ້ງານ (Username)',
+        usernamePlaceholder: 'ລະບຸຊື່ຜູ້ໃຊ້ງານ',
+        passwordLabel: 'ລະຫັດຜ່ານ (Password)',
+        passwordPlaceholder: 'ລະບຸລະຫັດຜ່ານ',
+        rememberMe: 'ຈື່ຂ້ອຍໄວ້ໃນລະບົບ',
+        forgotPassword: 'ລືມລະຫັດຜ່ານ?',
+        loginButton: 'ເຂົ້າสู่ລະບົບ (Login)',
+        demoAccounts: 'ບັນຊີສໍາລັບທົດລອງ (Demo Accounts)',
+        memberRole: 'ສະມາຊິກ',
+        agentRole: 'ເອເຢັ້ນ',
+        fillQuick: 'ປ້ອນໄວ',
+        contactSupport: 'ຕິດຕໍ່ແອດມິນ Line',
+        memberPortalBadge: 'Member Portal',
+        agentPortalBadge: 'Agent Console',
+        roleLabel: 'ສິດใช้งาน',
+        logoutButton: 'ອອກຈາກລະບົບ',
+        menuTitle: 'ເມນູລະບົບ',
+        memberMenuHeader: 'ເມນູສະມາຊິກ',
+        agentMenuHeader: 'ເມນູບໍລິຫານເອເຢັ້ນ',
+        menuBetLotto: 'ແທງຫວຍອອນໄລນ໌',
+        menuQuickKey: 'ຄີເລກໄວ 0-9',
+        menuHistory: 'ປະວັດການແທງ',
+        menuAgentDashboard: 'ແຜງຄວບຄຸມຄວາມສ່ຽງ & ແດຊບອດ',
+        menuAgentSettings: 'ຕັ້ງຄ່າອັດຕາຈ່າຍ & ບລັອກເລກ',
+        menuAgentMembers: 'ຈັດການສະມາຊິກໃນສາຍ',
+        menuAgentCommission: 'ລາຍງານຄອມມິດຊັ່ນ',
+        financeHeader: 'ການເງິນ',
+        withdrawButton: 'ຖອນເງິນ',
+        claimCreditButton: 'ຮັບເຄຣດິດຟຣີ',
+        claimedStatus: 'ຮັບແລ້ວ',
+
+        // Agent Translations (Lao)
+        agentCardTotalBet: 'ຍອດແທງລວມທັງສາຍງານ',
+        agentCardRiskHold: 'ຍອດຖືສູ້ເອງ / ຕັດສົ່ງສາຍເທິງ',
+        agentCardCommAcc: 'ຄ່າຄອມມິດຊັ່ນສະສົມ',
+        lottoStatusTitle: 'ສະຖານະເປີດ/ປິດຮັບແທງປະຈໍາວັນ',
+        closeTimeText: 'ເວລາປິດ',
+        statusOpen: '🟢 ເປີດຮັບແທງ',
+        statusClosed: '🔴 ປິດຮັບແທງ',
+        riskAlertTitle: 'ແຈ້ງເຕືອນເລກອັ້ນ & ຍອດສູ້ສ່ຽງສູງ',
+        hotNumber: 'ເລກເດັດ',
+        teamBetTotal: 'ຍອດແທງຈາກສາຍງານ',
+        ceilingLimit: 'ເພພານສູ້ໄຫວ',
+        cutRiskBtn: 'ຕັດສົ່ງສາຍເທິງ',
+        liveStreamTitle: 'ລາຍການສົ່ງໂພຍລ່າສຸດ',
+        betOn: 'ແທງ',
+        printSlipBtn: 'ສະລິບ',
+        proxyBetTitle: 'ຄີໂພຍແທນລູກທີມ',
+        proxyBetDesc: 'ກໍລະນີຮັບໂພຍຜ່ານไลน์ຫຼືເຈ້ຍ ສາມາດຊ່ວຍຄີລົງລະບົບໃຫ້ສະມາຊິກໄດ້ທັນທີ',
+        openProxyBetBtn: 'ເປີດໜ້າຄີໂພຍແທນສະມາຊິກ',
+        settlementTitle: 'ເຄຼຍຍອດຜົນລາງວັນປະຈໍາງວດ (Settlement)',
+        settlementDesc: 'ປ້ອນລາງວັນເພື່ອຄໍານວນ ກໍາໄລ/ຂາດທຶນ ແລະຕັດຈ່າຍເຄຣດິດອັດໂນມັດ',
+        settleBtn: 'ປ້ອນຜົນລາງວັນ & ສະຫຼຸບເຄຼຍຍອດ',
+        payoutSettingsTitle: 'ຕັ້ງຄ່າອັດຕາຈ່າຍ (Payout Settings)',
+        pay3Top: '3 ໂຕເທິງ (ຕໍ່ 1 ບາດ)',
+        pay3Tod: '3 ໂຕໂຕ໊ດ (ຕໍ່ 1 ບາດ)',
+        pay2Digit: '2 ໂຕ ເທິງ/ລຸ່ມ (ຕໍ່ 1 ບາດ)',
+        savePayoutBtn: 'ບັນທຶກອັດຕາຈ່າຍ',
+        savePayoutAlert: 'ບັນທຶກອັດຕາຈ່າຍຮຽບຮ້ອຍ!',
+        blockedNumbersTitle: 'ເລກປິດຮັບເດັດຂາດ (Blocked Numbers)',
+        blockedPlaceholder: 'ລະບຸເລກປິດຮັບ ເຊັ່ນ 99',
+        addBlockedBtn: 'ເພີ່ມເລກປິດຮັບ',
+        memberListTitle: 'ລາຍຊື່ສະມາຊິກພາຍໃຕ້ສາຍເອເຢັ້ນ',
+        memberListDesc: 'ຈັດການຂໍ້ມູນ ປັບເຄຣດິດ ແລະສ່ວນຫຼຸດລາຍບຸກຄົນ',
+        addMemberBtn: 'ເພີ່ມສະມາຊິກໃຫມ່',
+        thCreditBalance: 'ເຄຣດິດຄົງເຫຼືອ',
+        thTotalBet: 'ຍອດແທງລວມ',
+        thDiscount: 'ສ່ວນຫຼຸດ',
+        thActions: 'ການຈັດການ',
+        adjustCreditBtn: 'ເຕີມ/ຕັດ ເຄຣດິດ',
+        commReportTitle: 'ລາຍງານສະຫຼຸບຄ່າຄອມມິດຊັ່ນ',
+        commAvailableDesc: 'ຍອດເງິນຄ່າຄອມມິດຊັ່ນທີ່ພ້ອມຖອນ',
+        withdrawCommBtn: 'ຖອນຄອມມິດຊັ່ນເຂົ້າເງິນສົດ'
+      }
+    };
+
+    const { createApp } = Vue
+    createApp({
+      data() {
+        return {
+          isLoggedIn: false,
+          loginForm: { username: '', password: '', rememberMe: false },
+          loginError: '',
+          showPassword: false,
+          currentLang: 'th',
+          currentUser: { name: '', role: '' },
+          
+          currentRole: 'member',
+          activeMenu: 'lotto',
+          isMenuOpen: false,
+          freeCreditClaimed: false,
+          cashBalance: 5000,
+          creditBalance: 1200,
+          selectedLottoType: '3 ตัวบน/ล่าง',
+          lottoTypes: ['3 ตัวบน/ล่าง', '3 ตัว โต๊ด', '2 ตัว บน/ล่าง', '19 ประตู'],
+          quickForm: { num: '', top: '', bottom: '' },
+          betHistory: [],
+          
+          // ข้อมูล Agent
+          agentStats: { teamTotalBet: 145000, totalCommission: 12325 },
+          lottoStatuses: [
+            { nameTh: 'หวยรัฐบาลไทย', nameEn: 'Thai Government Lotto', nameLa: 'ຫວຍລັດຖະບານໄທ', closeTime: '15:30', isOpen: true },
+            { nameTh: 'หวยฮานอยพิเศษ', nameEn: 'Hanoi Special Lotto', nameLa: 'ຫວຍຮາໂນ້ຍພິເສດ', closeTime: '17:00', isOpen: true },
+            { nameTh: 'หวยลาวพัฒนา', nameEn: 'Lao Pattana Lotto', nameLa: 'ຫວຍລາວພັດທະນາ', closeTime: '20:00', isOpen: false }
+          ],
+          riskNumbers: [
+            { num: '954', type: '3 ตัวบน', currentAmount: 48000, maxLimit: 30000, percent: 90 },
+            { num: '54', type: '2 ตัวล่าง', currentAmount: 25000, maxLimit: 20000, percent: 85 }
+          ],
+          liveStreams: [
+            { id: 1, user: 'user_boy88', lotto: 'รัฐบาลไทย', num: '954', detail: 'บน 100x100', time: '11:12 น.' },
+            { id: 2, user: 'user_somchai', lotto: 'ฮานอยพิเศษ', num: '54', detail: 'ล่าง 500', time: '11:08 น.' }
+          ],
+          payouts: { top3: 900, tod3: 150, twoDigit: 95 },
+          blockedNumbers: ['99', '00'],
+          newBlockedNum: '',
+          agentMembers: [
+            { username: 'user_boy88', balance: 3500, totalBet: 45000, discount: 8 },
+            { username: 'user_lek99', balance: 1200, totalBet: 28000, discount: 8 }
+          ]
+        }
+      },
+      methods: {
+        t(key) {
+          return translations[this.currentLang][key] || key;
+        },
+        getLottoName(lotto) {
+          if (this.currentLang === 'en') return lotto.nameEn;
+          if (this.currentLang === 'la') return lotto.nameLa;
+          return lotto.nameTh;
+        },
+        handleLogin() {
+          this.loginError = '';
+          const { username, password } = this.loginForm;
+
+          if (username === 'user1' && password === '123') {
+            this.isLoggedIn = true;
+            this.currentRole = 'member';
+            this.activeMenu = 'lotto';
+            this.currentUser = { name: 'คุณสมาชิก (user1)', role: 'member' };
+          } else if (username === 'agent1' && password === '123') {
+            this.isLoggedIn = true;
+            this.currentRole = 'agent';
+            this.activeMenu = 'agent-dashboard';
+            this.currentUser = { name: 'เฮียไก่ (agent1)', role: 'agent' };
+          } else {
+            if (this.currentLang === 'la') {
+              this.loginError = 'ຊື່ຜູ້ໃຊ້ງານ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ!';
+            } else if (this.currentLang === 'en') {
+              this.loginError = 'Invalid username or password!';
+            } else {
+              this.loginError = 'ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง!';
+            }
+          }
+        },
+        fillLogin(u, p) {
+          this.loginForm.username = u;
+          this.loginForm.password = p;
+        },
+        handleLogout() {
+          this.isLoggedIn = false;
+          this.loginForm.username = '';
+          this.loginForm.password = '';
+          this.loginError = '';
+        },
+        forgotPasswordAlert() {
+          alert('🔐 หากลืมรหัสผ่าน กรุณาล็อกอินด้วยเบอร์โทรศัพท์ หรือติดต่อแอดมินทาง Line เพื่อยืนยันตัวตนรีเซ็ตรหัสผ่านครับ');
+        },
+        contactAdmin() {
+          alert('💬 กำลังนำคุณไปยัง Line OA สำหรับติดต่อฝ่ายบริการลูกค้า...');
+        },
+        selectMenu(menu) {
+          this.activeMenu = menu;
+          this.isMenuOpen = false;
+        },
+        claimFreeCredit() {
+          if (this.freeCreditClaimed) return alert('คุณรับเครดิตฟรีของวันนี้ไปแล้ว');
+          this.creditBalance += 100;
+          this.freeCreditClaimed = true;
+          alert('รับเครดิตฟรีสำเร็จ +100 เครดิต!');
+        },
+        openWithdrawModal() {
+          const amount = prompt('กรอกจำนวนเงินที่ต้องการถอน (เงินสดคงเหลือ: ' + this.cashBalance + '฿):', '500');
+          if (amount && !isNaN(amount)) {
+            if (Number(amount) > this.cashBalance) return alert('ยอดเงินสดไม่พอถอน');
+            this.cashBalance -= Number(amount);
+            alert(`ส่งคำขอถอนเงินจำนวน ${amount} บาทเรียบร้อย!`);
+          }
+        },
+        addQuickBet() {
+          if (!this.quickForm.num) return alert('กรุณากรอกตัวเลข');
+          if (this.blockedNumbers.includes(this.quickForm.num)) {
+            return alert(`❌ เลข ${this.quickForm.num} เป็นเลขปิดรับเด็ดขาดของระบบ!`);
+          }
+          const total = (Number(this.quickForm.top) || 0) + (Number(this.quickForm.bottom) || 0);
+          if (total <= 0) return alert('กรุณากรอกยอดแทง');
+
+          this.betHistory.unshift({
+            type: this.selectedLottoType,
+            num: this.quickForm.num,
+            amount: `${this.quickForm.top || 0}x${this.quickForm.bottom || 0}`
+          });
+
+          this.cashBalance -= total;
+          alert(`เพิ่มเลข ${this.quickForm.num} (${this.selectedLottoType}) ยอด ${total}฿ ลงโพยเรียบร้อย!`);
+          this.quickForm.num = '';
+          this.quickForm.top = '';
+          this.quickForm.bottom = '';
+        },
+        toggleLottoStatus(lotto) {
+          lotto.isOpen = !lotto.isOpen;
+          alert(`ปรับสถานะ ${this.getLottoName(lotto)} เป็น: ${lotto.isOpen ? 'เปิดรับแทง' : 'ปิดรับแทง'} เรียบร้อย`);
+        },
+        cutRisk(risk) {
+          const cutAmount = risk.currentAmount - risk.maxLimit;
+          alert(`ตัดส่งส่วนเกินเลข ${risk.num} จำนวน ฿${cutAmount.toLocaleString()} เข้าสายบนเรียบร้อยแล้ว!`);
+          risk.currentAmount = risk.maxLimit;
+          risk.percent = 50;
+        },
+        proxyBetModal() {
+          const targetUser = prompt('กรอก Username ของสมาชิกที่ต้องการคีย์แทน:');
+          if (targetUser) {
+            const num = prompt(`[คีย์แทน ${targetUser}] กรอกตัวเลข:`);
+            if (this.blockedNumbers.includes(num)) {
+              return alert(`❌ ไม่สามารถคีย์ได้ เนื่องจากเลข ${num} เป็นเลขปิดรับ!`);
+            }
+            const amount = prompt(`[คีย์แทน ${targetUser}] กรอกยอดเงิน (บาท):`);
+            if (num && amount) {
+              this.liveStreams.unshift({
+                id: Date.now(),
+                user: `${targetUser} (เอเย่นต์คีย์)`,
+                lotto: 'รัฐบาลไทย',
+                num: num,
+                detail: `ยอด ฿${amount}`,
+                time: 'เมื่อครู่'
+              });
+              alert(`คีย์โพยเลข ${num} ยอด ฿${amount} ให้ ${targetUser} เรียบร้อย!`);
+            }
+          }
+        },
+        printSlip(stream) {
+          alert(`🖨️ กำลังส่งออกสลิปโพย:\n----------------------\nผู้แทง: ${stream.user}\nประเภท: ${stream.lotto}\nเลข: ${stream.num}\nรายการ: ${stream.detail}\nเวลา: ${stream.time}\n----------------------\nสามารถเซฟเป็นรูปส่ง Line ได้เลย`);
+        },
+        settleReward() {
+          const rewardNum = prompt('กรอกผลรางวัล 3 ตัวบน งวดล่าสุด:', '954');
+          if (rewardNum) {
+            alert(`ทำการเคลียร์งวดผลรางวัล [${rewardNum}] เรียบร้อย!\nระบบได้คำนวณส่วนต่าง ชนะ/แพ้ และปรับเครดิตให้ลูกทีมในสายงานอัตโนมัติแล้ว`);
+          }
+        },
+        addBlockedNumber() {
+          if (!this.newBlockedNum) return;
+          if (!this.blockedNumbers.includes(this.newBlockedNum)) {
+            this.blockedNumbers.push(this.newBlockedNum);
+            alert(`เพิ่มเลขปิดรับ ${this.newBlockedNum} เรียบร้อย`);
+          }
+          this.newBlockedNum = '';
+        },
+        removeBlockedNumber(num) {
+          this.blockedNumbers = this.blockedNumbers.filter(n => n !== num);
+        },
+        addNewMember() {
+          const name = prompt('กรอกชื่อผู้ใช้สมาชิกใหม่:');
+          if (name) {
+            this.agentMembers.push({ username: name, balance: 0, totalBet: 0, discount: 8 });
+            alert(`เพิ่มสมาชิก ${name} เข้าในสายเรียบร้อย!`);
+          }
+        },
+        adjustCredit(member) {
+          const amount = prompt(`กรอกยอดเครดิตที่จะปรับให้ ${member.username} (บวก=เติม / ลบ=ตัด):`, '500');
+          if (amount && !isNaN(amount)) {
+            member.balance += Number(amount);
+            alert(`ปรับยอดเครดิตของ ${member.username} เป็น ฿${member.balance} เรียบร้อย`);
+          }
+        },
+        withdrawCommission() {
+          if (this.agentStats.totalCommission <= 0) return alert('ไม่มียอดคอมมิชชันให้ถอน');
+          this.cashBalance += this.agentStats.totalCommission;
+          alert(`ถอนค่าคอมมิชชันจำนวน ฿${this.agentStats.totalCommission.toLocaleString()} เข้ายอดเงินสดเรียบร้อย!`);
+          this.agentStats.totalCommission = 0;
+        }
+      }
+    }).mount('#app')
+  </script>
+</body>
+</html>

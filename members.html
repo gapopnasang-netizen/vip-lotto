@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการสมาชิก - VIP LOTTO</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+    <div id="app" class="flex flex-col min-h-screen pb-16">
+        
+        <!-- Header -->
+        <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center font-bold text-white shadow-lg">
+                    <i class="fa-solid fa-users-gear"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold text-white leading-tight">ระบบจัดการสมาชิก</h1>
+                    <p class="text-xs text-blue-400">VIP LOTTO Member & Credit Control</p>
+                </div>
+            </div>
+            <a href="index.html" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs transition border border-slate-700">
+                <i class="fa-solid fa-house mr-1"></i> กลับหน้าหลัก
+            </a>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="max-w-6xl mx-auto px-4 mt-6 w-full space-y-6">
+
+            <!-- Search & Filter Bar -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="relative w-full sm:w-96">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
+                        <i class="fa-solid fa-search"></i>
+                    </span>
+                    <input v-model="searchQuery" type="text" placeholder="ค้นหาด้วยชื่อผู้ใช้, ชื่อ-นามสกุล, หรือเบอร์โทร..." class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 transition">
+                </div>
+                <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                    <span class="text-xs text-slate-400">สมาชิกทั้งหมด: <strong class="text-white">{{ filteredMembers.length }}</strong> คน</span>
+                </div>
+            </div>
+
+            <!-- Members Table -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-800 uppercase text-slate-400 tracking-wider">
+                            <tr>
+                                <th class="px-5 py-3.5">ยูสเซอร์เนม / ชื่อ</th>
+                                <th class="px-5 py-3.5">เบอร์โทรศัพท์</th>
+                                <th class="px-5 py-3.5">ยอดเงินคงเหลือ</th>
+                                <th class="px-5 py-3.5">สถานะ</th>
+                                <th class="px-5 py-3.5 text-center">จัดการเครดิต</th>
+                                <th class="px-5 py-3.5 text-center">สถานะบัญชี</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            <tr v-for="member in filteredMembers" :key="member.id" class="hover:bg-slate-800/40 transition">
+                                <td class="px-5 py-4">
+                                    <div class="font-bold text-white text-sm">{{ member.username }}</div>
+                                    <div class="text-slate-400 text-xs">{{ member.fullname }}</div>
+                                </td>
+                                <td class="px-5 py-4 font-mono text-slate-300">{{ member.phone }}</td>
+                                <td class="px-5 py-4 font-bold text-emerald-400 text-sm">฿{{ member.balance.toLocaleString('th-TH', {minimumFractionDigits: 2}) }}</td>
+                                <td class="px-5 py-4">
+                                    <span v-if="member.status === 'active'" class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 text-[10px] font-semibold">ปกติ</span>
+                                    <span v-else class="px-2.5 py-1 bg-rose-500/10 text-rose-400 rounded-full border border-rose-500/20 text-[10px] font-semibold">ถูกระงับ</span>
+                                </td>
+                                <td class="px-5 py-4 text-center">
+                                    <button @click="openCreditModal(member)" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition shadow-sm text-xs">
+                                        <i class="fa-solid fa-coins mr-1"></i> เติม/ตัดเครดิต
+                                    </button>
+                                </td>
+                                <td class="px-5 py-4 text-center">
+                                    <button @click="toggleStatus(member)" :class="member.status === 'active' ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white' : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950'" class="px-3 py-1.5 rounded-lg font-medium transition text-xs">
+                                        {{ member.status === 'active' ? 'ระงับบัญชี' : 'ปลดแบน' }}
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Credit Adjustment Modal -->
+        <div v-if="showModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-fade-in space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-wallet text-amber-400 mr-2"></i> จัดการเครดิต: {{ selectedMember.username }}</h3>
+                    <button @click="showModal = false" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">ยอดเงินปัจจุบัน</label>
+                        <input type="text" disabled :value="'฿ ' + selectedMember.balance.toLocaleString()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-400 font-bold text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">ประเภทการทำรายการ</label>
+                        <select v-model="creditAction" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                            <option value="add">(+) เติมเครดิตเข้ากระเป๋า</option>
+                            <option value="deduct">(-) ตัดเครดิตออกจากกระเป๋า</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">จำนวนเงิน (บาท)</label>
+                        <input v-model.number="creditAmount" type="number" min="1" placeholder="ระบุจำนวนเงิน" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-emerald-400 font-bold">
+                    </div>
+                </div>
+
+                <div class="flex space-x-3 pt-2">
+                    <button @click="showModal = false" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-medium text-xs transition">ยกเลิก</button>
+                    <button @click="confirmCreditChange" class="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-emerald-500/20">ยืนยันทำรายการ</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Vue Script -->
+    <script>
+        const { createApp, ref, computed } = Vue;
+
+        createApp({
+            setup() {
+                const searchQuery = ref('');
+                const showModal = ref(false);
+                const selectedMember = ref({});
+                const creditAction = ref('add');
+                const creditAmount = ref(null);
+
+                const members = ref([
+                    { id: 1, username: 'user_a01', fullname: 'สมชาย ใจดี', phone: '081-234-5678', balance: 1540.50, status: 'active' },
+                    { id: 2, username: 'user_b02', fullname: 'สมหญิง รักsiam', phone: '089-876-5432', balance: 5400.00, status: 'active' },
+                    { id: 3, username: 'user_c03', fullname: 'มานพ โชคดี', phone: '062-111-2233', balance: 0.00, status: 'banned' },
+                    { id: 4, username: 'user_d04', fullname: 'วิชัย มั่งมี', phone: '095-444-5566', balance: 12500.25, status: 'active' }
+                ]);
+
+                const filteredMembers = computed(() => {
+                    return members.value.filter(m => 
+                        m.username.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+                        m.fullname.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+                        m.phone.includes(searchQuery.value)
+                    );
+                });
+
+                const openCreditModal = (member) => {
+                    selectedMember.value = member;
+                    creditAmount.value = null;
+                    creditAction.value = 'add';
+                    showModal.value = true;
+                };
+
+                const confirmCreditChange = () => {
+                    if (!creditAmount.value || creditAmount.value <= 0) {
+                        alert('กรุณากรอกจำนวนเงินให้ถูกต้อง');
+                        return;
+                    }
+
+                    if (creditAction.value === 'add') {
+                        selectedMember.value.balance += creditAmount.value;
+                        alert(`เติมเครดิต ฿${creditAmount.value.toLocaleString()} ให้ยูสเซอร์ ${selectedMember.value.username} สำเร็จ`);
+                    } else {
+                        if (creditAmount.value > selectedMember.value.balance) {
+                            alert('ยอดเงินในบัญชีไม่พอตัดออก');
+                            return;
+                        }
+                        selectedMember.value.balance -= creditAmount.value;
+                        alert(`ตัดเครดิต ฿${creditAmount.value.toLocaleString()} จากยูสเซอร์ ${selectedMember.value.username} สำเร็จ`);
+                    }
+
+                    showModal.value = false;
+                };
+
+                const toggleStatus = (member) => {
+                    member.status = member.status === 'active' ? 'banned' : 'active';
+                };
+
+                return {
+                    searchQuery,
+                    members,
+                    filteredMembers,
+                    showModal,
+                    selectedMember,
+                    creditAction,
+                    creditAmount,
+                    openCreditModal,
+                    confirmCreditChange,
+                    toggleStatus
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

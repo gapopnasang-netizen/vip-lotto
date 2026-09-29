@@ -1,0 +1,74 @@
+<div id="adminApp" class="max-w-6xl mx-auto p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-xl font-bold text-white"><i class="fa-solid fa-gauge-high text-amber-400 mr-2"></i> แดชบอร์ดแอดมิน - ตรวจสอบโพยทั้งหมด</h1>
+        <button @click="fetchTickets" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-xs">
+            <i class="fa-solid fa-rotate mr-1"></i> รีเฟรชข้อมูล
+        </button>
+    </div>
+
+    <!-- ตารางแสดงรายการโพย -->
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-xl">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-900/60 text-slate-400 text-xs border-b border-slate-700">
+                    <th class="p-4">ID โพย</th>
+                    <th class="p-4">ผู้ใช้งาน</th>
+                    <th class="p-4">ยอดเงินรวม</th>
+                    <th class="p-4">สถานะ</th>
+                    <th class="p-4">เวลาที่ทำรายการ</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700/50 text-sm">
+                <tr v-for="ticket in tickets" :key="ticket.id" class="hover:bg-slate-700/30">
+                    <td class="p-4 font-bold text-amber-400">#{{ ticket.id }}</td>
+                    <td class="p-4 text-white">{{ ticket.username }}</td>
+                    <td class="p-4 text-emerald-400 font-bold">฿{{ parseFloat(ticket.total_amount).toLocaleString() }}</td>
+                    <td class="p-4">
+                        <span class="px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full text-xs">
+                            {{ ticket.status }}
+                        </span>
+                    </td>
+                    <td class="p-4 text-slate-400 text-xs">{{ new Date(ticket.created_at).toLocaleString() }}</td>
+                </tr>
+                <tr v-if="tickets.length === 0">
+                    <td colspan="5" class="text-center py-10 text-slate-500">ไม่มีข้อมูลโพยหวยในระบบ</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script>
+    const { createApp, ref, onMounted } = Vue;
+    createApp({
+        setup() {
+            const tickets = ref([]);
+
+            const fetchTickets = async () => {
+                const token = localStorage.getItem('token'); // ดึง Token ที่เก็บไว้ตอน Login
+                try {
+                    const res = await fetch('http://localhost:3000/api/admin/tickets', {
+                        headers: {
+                            'Authorization': `Bearer ${token}` // แนบ Token ไปกับคำขอ
+                        }
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        tickets.value = data.data;
+                    } else {
+                        alert('ไม่มีสิทธิ์เข้าถึง หรือ Token หมดอายุ: ' + data.message);
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            };
+
+            onMounted(() => {
+                fetchTickets();
+            });
+
+            return { tickets, fetchTickets };
+        }
+    }).mount('#adminApp');
+</script>
