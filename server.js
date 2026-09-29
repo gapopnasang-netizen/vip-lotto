@@ -1,4 +1,10 @@
 const express = require('express');
+const path = require('path'); // เพิ่มบรรทัดนี้
+const cors = require('cors');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { Pool } = require('pg');
+const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -219,7 +225,13 @@ app.get('/api/admin/reports', authenticateToken, async (req, res) => {
         res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการดึงข้อมูลรายงาน' });
     }
 });
+// เปิดให้เซิร์ฟเวอร์อ่านไฟล์ HTML, CSS, JS ฝั่งหน้าบ้านได้
+app.use(express.static(path.join(__dirname)));
 
+// ตั้งค่าหน้าแรกให้เปิดไฟล์ index.html อัตโนมัติ
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 // เริ่มต้นรันเซิร์ฟเวอร์
 app.listen(PORT, () => {
     console.log(`🚀 Server is running smoothly on port ${PORT}`);
