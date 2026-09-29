@@ -1,10 +1,5 @@
 const express = require('express');
-const path = require('path'); // เพิ่มบรรทัดนี้
-const cors = require('cors');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
-const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -12,15 +7,14 @@ const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'VIP_LOTTO_SUPER_SECRET_KEY'; // แนะนำให้เปลี่ยนหรือย้ายไปใส่ .env
+const JWT_SECRET = process.env.JWT_SECRET || 'VIP_LOTTO_SUPER_SECRET_KEY';
 
-// ตั้งค่าการเชื่อมต่อฐานข้อมูล PostgreSQL
+// ตั้งค่าการเชื่อมต่อฐานข้อมูล PostgreSQL (รองรับ Supabase บน Cloud)
 const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'vip_lotto',
-    password: 'your_password', // เปลี่ยนเป็นรหัสผ่านฐานข้อมูลของคุณ
-    port: 5432,
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false // จำเป็นสำหรับการเชื่อมต่อ Supabase บนคลาวด์
+    }
 });
 
 app.use(cors());
@@ -145,7 +139,7 @@ app.get('/api/admin/tickets', authenticateToken, async (req, res) => {
     }
 });
 
-// ดึงรายชื่อสมาชิกทั้งหมดสำหรับหน้าจัดการสมาชิก[cite: 17]
+// ดึงรายชื่อสมาชิกทั้งหมดสำหรับหน้าจัดการสมาชิก
 app.get('/api/admin/members', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
@@ -158,7 +152,7 @@ app.get('/api/admin/members', authenticateToken, async (req, res) => {
     }
 });
 
-// ปรับปรุงเครดิตสมาชิก (เติม/หักเครดิต)[cite: 17]
+// ปรับปรุงเครดิตสมาชิก (เติม/หักเครดิต)
 app.post('/api/admin/members/credit', authenticateToken, async (req, res) => {
     const { userId, amount, type } = req.body; // type: 'add' หรือ 'sub'
     
@@ -194,7 +188,7 @@ app.post('/api/admin/members/credit', authenticateToken, async (req, res) => {
     }
 });
 
-// หน้ารายงานสรุปยอดรวมและยอดแทงย้อนหลัง[cite: 20]
+// หน้ารายงานสรุปยอดรวมและยอดแทงย้อนหลัง
 app.get('/api/admin/reports', authenticateToken, async (req, res) => {
     try {
         const summaryQuery = await pool.query(`
@@ -225,6 +219,7 @@ app.get('/api/admin/reports', authenticateToken, async (req, res) => {
         res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการดึงข้อมูลรายงาน' });
     }
 });
+
 // เปิดให้เซิร์ฟเวอร์อ่านไฟล์ HTML, CSS, JS ฝั่งหน้าบ้านได้
 app.use(express.static(path.join(__dirname)));
 
@@ -232,6 +227,7 @@ app.use(express.static(path.join(__dirname)));
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
+
 // เริ่มต้นรันเซิร์ฟเวอร์
 app.listen(PORT, () => {
     console.log(`🚀 Server is running smoothly on port ${PORT}`);
