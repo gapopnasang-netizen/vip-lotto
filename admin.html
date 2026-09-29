@@ -48,7 +48,7 @@
             const fetchTickets = async () => {
                 const token = localStorage.getItem('token'); // ดึง Token ที่เก็บไว้ตอน Login
                 try {
-                    const res = await fetch('http://localhost:3000/api/admin/tickets', {
+                    const res = await fetch('https://vip-lotto-ugaj.onrender.com/api/admin/tickets', {
                         headers: {
                             'Authorization': `Bearer ${token}` // แนบ Token ไปกับคำขอ
                         }
